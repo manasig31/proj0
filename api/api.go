@@ -3,6 +3,10 @@ package api
 import (
 	"net/http"
 	"github.com/gorilla/mux"
+	"encoding/json"
+	"github.com/gorilla/mux"
+	"errors"
+	"strconv"
 )
 
 
@@ -10,7 +14,7 @@ import (
 //See credentials.go
 
 /*YOUR CODE HERE*/
-
+var users []Credentials = []Credentials{}
 
 
 func RegisterRoutes(router *mux.Router) error {
@@ -46,6 +50,15 @@ func getCookie(response http.ResponseWriter, request *http.Request) {
 	*/
 
 	/*YOUR CODE HERE*/
+	cookie, err := request.Cookie("access_token")
+
+	// there was an error 
+	if err != nil {
+		fmt.Fprintf(response, "")
+		return
+	}
+
+	fmt.Fprintf(response, cookie.Val)
 }
 
 func getQuery(response http.ResponseWriter, request *http.Request) {
@@ -56,6 +69,8 @@ func getQuery(response http.ResponseWriter, request *http.Request) {
 	*/
 
 	/*YOUR CODE HERE*/
+	username := request.URL.Query().Get("userID")
+	fmt.Fprintf(response, username)
 }
 
 func getJSON(response http.ResponseWriter, request *http.Request) {
@@ -76,7 +91,22 @@ func getJSON(response http.ResponseWriter, request *http.Request) {
 	*/
 
 	/*YOUR CODE HERE*/
-	
+	credentials = Credentials{}
+	err := json.NewDecoder(request.body).Decode(&credentials)
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if credentials.Username == "" || credentials.Password == "" {
+		http.Error(response, errors.New("bad credentials").Error(), http.StatusBadRequest)
+		return 
+	}
+
+	users = append (users, credentials)
+
+	// what does this mean? 
+	response.WriteHeader(201)
+	return
 }
 
 func signup(response http.ResponseWriter, request *http.Request) {
@@ -97,6 +127,22 @@ func signup(response http.ResponseWriter, request *http.Request) {
 	*/
 
 	/*YOUR CODE HERE*/
+	credentials = Credentials{}
+	err := json.NewDecoder(request.body).Decode(&credentials)
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if credentials.Username == "" || credentials.Password == "" {
+		http.Error(response, errors.New("bad credentials").Error(), http.StatusBadRequest)
+		return 
+	}
+
+	users = append (users, credentials)
+
+	// what does this mean? 
+	response.WriteHeader(201)
+	return
 }
 
 func getIndex(response http.ResponseWriter, request *http.Request) {
@@ -119,6 +165,26 @@ func getIndex(response http.ResponseWriter, request *http.Request) {
 	*/
 
 	/*YOUR CODE HERE*/
+	credentials = Credentials{}
+	err := json.NewDecoder(request.body).Decode(&credentials)
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if credentials.Username == "" {
+		http.Error(response, errors.New("bad credentials").Error(), http.StatusBadRequest)
+		return 
+	}
+
+	for i := 0; i < len(users); i++ {
+		if users[i] == credentials.Username {
+			fmt.Fprintf(response, strconv.Itoa(i))
+			return
+		}
+	}
+
+	http.Error(response, errors.New("user doesn't exist").Error(), http.StatusBadRequest)
+	return 
 }
 
 func getPassword(response http.ResponseWriter, request *http.Request) {
@@ -139,6 +205,24 @@ func getPassword(response http.ResponseWriter, request *http.Request) {
 	*/
 
 	/*YOUR CODE HERE*/
+	credentials = Credentials{}
+	err := json.NewDecoder(request.body).Decode(&credentials)
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if credentials.Username == "" {
+		http.Error(response, errors.New("bad credentials").Error(), http.StatusBadRequest)
+		return
+	}
+	for i := 0; i < len(users); i++ {
+		if users[i].Username == credentials.Username {
+			fmt.Fprintf(response, users[i].Password)
+			return 
+		}
+	}
+	http.Error(response, errors.New("user doesn't exist").Error(), http.StatusBadRequest)
+	return 
 }
 
 
@@ -164,6 +248,24 @@ func updatePassword(response http.ResponseWriter, request *http.Request) {
 	*/
 
 	/*YOUR CODE HERE*/
+	credentials = Credentials{}
+	err := json.NewDecoder(request.body).Decode(&credentials)
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if credentials.Username == "" || credentials.Password == "" {
+		http.Error(response, errors.New("bad credentials").Error(), http.StatusBadRequest)
+		return
+	}
+	for i := 0; i < len(users); i++ {
+		if users[i].Username == credentials.Username {
+			users[i].Password := credentials.Password
+			return 
+		}
+	}
+	http.Error(response, errors.New("user doesn't exist").Error(), http.StatusBadRequest)
+	return 
 }
 
 func deleteUser(response http.ResponseWriter, request *http.Request) {
@@ -189,4 +291,26 @@ func deleteUser(response http.ResponseWriter, request *http.Request) {
 	*/
 
 	/*YOUR CODE HERE*/
+	credentials = Credentials{}
+	err := json.NewDecoder(request.body).Decode(&credentials)
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if credentials.Username == "" || credentials.Password == "" {
+		http.Error(response, errors.New("bad credentials").Error(), http.StatusBadRequest)
+		return
+	}
+	for i := 0; i < len(users); i++ {
+		if users[i].Username == credentials.Username && users[i].Password == credentials.Password {
+			users = remove(users, i)
+			return 
+		}
+	}
+	http.Error(response, errors.New("user doesn't exist").Error(), http.StatusBadRequest)
+	return 
+}
+
+func remove(slice []Credentials, s int) []Credentials {
+    return append(slice[:s], slice[s+1:]...)
 }
